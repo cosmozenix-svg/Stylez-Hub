@@ -1,0 +1,8 @@
+# Google Search Console & Web Crawlers Rules for Stylez Hub
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin/
+
+# Sitemap location
+Sitemap: /sitemap.xml

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Stylez Hub — Official website of StylezSenpai.</title>
+    <meta name="description" content="Official website of StylezSenpai." />
+    <meta property="og:title" content="Stylez Hub" />
+    <meta property="og:description" content="Official website of StylezSenpai." />
+    <meta property="og:image" content="https://cdn.phototourl.com/anon/2026-11-20-71df7b07-2e68-4d3a-bdc6-8e687906ecbc.jpg" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Stylez Hub" />
+    <meta name="twitter:description" content="Official website of StylezSenpai." />
+    <meta name="twitter:image" content="https://cdn.phototourl.com/anon/2026-11-20-71df7b07-2e68-4d3a-bdc6-8e687906ecbc.jpg" />
+    <meta name="theme-color" content="#040812" />
+    <meta name="google-site-verification" content="kgmgCVA4j94r1_IowHz-7D_Wt91JsCXa2JkBIUU-OiA" />
+
+    <!-- Web Favicon -->
+    <link rel="icon" type="image/jpeg" href="https://cdn.phototourl.com/anon/2026-11-20-71df7b07-2e68-4d3a-bdc6-8e687906ecbc.jpg" />
+    <link rel="shortcut icon" type="image/jpeg" href="https://cdn.phototourl.com/anon/2026-11-20-71df7b07-2e68-4d3a-bdc6-8e687906ecbc.jpg" />
+    <link rel="apple-touch-icon" href="https://cdn.phototourl.com/anon/2026-11-20-71df7b07-2e68-4d3a-bdc6-8e687906ecbc.jpg" />
+
+    <!-- Error suppression & setter guard for window.fetch in iframe environments -->
+    <script>
+      (function() {
+        window.addEventListener('error', function(event) {
+          if (event && event.message && event.message.includes('fetch') && event.message.includes('getter')) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            return true;
+          }
+        }, true);
+
+        var origDefineProperty = Object.defineProperty;
+        Object.defineProperty = function(obj, prop, descriptor) {
+          if ((obj === window || obj === globalThis) && prop === 'fetch' && descriptor) {
+            var currentVal = descriptor.value;
+            var currentGet = descriptor.get;
+            var currentSet = descriptor.set;
+
+            return origDefineProperty(obj, prop, {
+              get: function() {
+                if (currentVal !== undefined) return currentVal;
+                return currentGet ? currentGet.call(this) : window.fetch;
+              },
+              set: function(val) {
+                currentVal = val;
+                if (currentSet) currentSet.call(this, val);
+              },
+              configurable: true,
+              enumerable: descriptor.enumerable !== undefined ? descriptor.enumerable : true,
+            });
+          }
+          return origDefineProperty(obj, prop, descriptor);
+        };
+      })();
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "Stylez Hub",
+  "description": "Official website of StylezSenpai.",
+  "url": "https://alokpatweb.vercel.app"
+}
+</script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  </head>
+  <body class="bg-[#040812] text-slate-100 antialiased selection:bg-blue-600/40 selection:text-sky-100 min-h-screen overflow-x-hidden">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

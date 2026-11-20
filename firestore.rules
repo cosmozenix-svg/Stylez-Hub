@@ -1,0 +1,110 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global Hardened Helpers
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        (request.auth.token.email == 'cosmozenix@gmail.com' && request.auth.token.email_verified == true) ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Validation for Post Entity
+    function isValidPost(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 250
+        && data.description is string && data.description.size() <= 50000
+        && data.createdAt is string && data.createdAt.size() <= 64
+        && (!('images' in data) || (data.images is list && data.images.size() <= 20))
+        && (!('category' in data) || (data.category is string && data.category.size() <= 100))
+        && (!('links' in data) || (data.links is list && data.links.size() <= 20))
+        && (!('reviews' in data) || (data.reviews is list && data.reviews.size() <= 500));
+    }
+
+    // Validation for News Item Entity
+    function isValidNews(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.content is string && data.content.size() > 0 && data.content.size() <= 2000
+        && data.createdAt is string && data.createdAt.size() <= 64;
+    }
+
+    // Validation for Social Account Entity
+    function isValidSocial(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.platform is string && data.platform.size() > 0 && data.platform.size() <= 100
+        && data.url is string && data.url.size() > 0 && data.url.size() <= 1000
+        && (!('logoUrl' in data) || (data.logoUrl is string && data.logoUrl.size() <= 200000))
+        && (!('color' in data) || (data.color is string && data.color.size() <= 32));
+    }
+
+    // Validation for Admin Setting Entity
+    function isValidSetting(data) {
+      return data.username is string && data.username.size() > 0 && data.username.size() <= 100
+        && data.password is string && data.password.size() > 0 && data.password.size() <= 200;
+    }
+
+    // Public Posts Collection
+    match /posts/{postId} {
+      allow get, list: if true;
+      allow create: if isValidId(postId) && isValidPost(incoming());
+      allow update: if isValidId(postId) && isValidPost(incoming());
+      allow delete: if isValidId(postId);
+    }
+
+    // Community News Collection
+    match /news/{newsId} {
+      allow get, list: if true;
+      allow create: if isValidId(newsId) && isValidNews(incoming());
+      allow update: if isValidId(newsId) && isValidNews(incoming());
+      allow delete: if isValidId(newsId);
+    }
+
+    // Social Media Platforms Collection
+    match /socials/{socialId} {
+      allow get, list: if true;
+      allow create: if isValidId(socialId) && isValidSocial(incoming());
+      allow update: if isValidId(socialId) && isValidSocial(incoming());
+      allow delete: if isValidId(socialId);
+    }
+
+    // Configuration and Credentials Collection
+    match /settings/{settingId} {
+      allow get, list: if true;
+      allow create: if isValidId(settingId) && isValidSetting(incoming());
+      allow update: if isValidId(settingId) && isValidSetting(incoming());
+      allow delete: if isValidId(settingId);
+    }
+
+    // Admins Collection
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Diagnostic Connection Document
+    match /test/{docId} {
+      allow read, write: if true;
+    }
+  }
+}

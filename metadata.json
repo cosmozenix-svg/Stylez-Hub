@@ -1,0 +1,6 @@
+{
+  "name": "Alokpat",
+  "description": "Explore official posts, announcements, community reviews, and real-time news updates on Alokpat. Discover verified links and connect with our social channels.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

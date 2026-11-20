@@ -1,0 +1,133 @@
+{
+  "entities": {
+    "Post": {
+      "title": "Post",
+      "description": "A social post published on Stylez Hub containing media, links, descriptions, and user reviews.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the post."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title or headline of the post.",
+          "maxLength": 250
+        },
+        "description": {
+          "type": "string",
+          "description": "The rich content description or text of the post.",
+          "maxLength": 50000
+        },
+        "images": {
+          "type": "array",
+          "description": "List of image URLs or media attachments."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp string when the post was created."
+        },
+        "category": {
+          "type": "string",
+          "description": "Optional category or tag."
+        },
+        "links": {
+          "type": "array",
+          "description": "Array of external action links for the post."
+        },
+        "reviews": {
+          "type": "array",
+          "description": "User reviews submitted for this specific post."
+        }
+      },
+      "required": ["id", "title", "description", "createdAt"]
+    },
+    "NewsItem": {
+      "title": "NewsItem",
+      "description": "Short community news or broadcast bulletin.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the news bulletin."
+        },
+        "content": {
+          "type": "string",
+          "description": "Content of the announcement bulletin.",
+          "maxLength": 2000
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp string when the news was published."
+        }
+      },
+      "required": ["id", "content", "createdAt"]
+    },
+    "SocialAccount": {
+      "title": "SocialAccount",
+      "description": "Official social platform link for the Stylez Hub community.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the social account."
+        },
+        "platform": {
+          "type": "string",
+          "description": "Name of the platform."
+        },
+        "logoUrl": {
+          "type": "string",
+          "description": "Icon or logo URL for the platform."
+        },
+        "color": {
+          "type": "string",
+          "description": "Accent hex color for the social button."
+        },
+        "url": {
+          "type": "string",
+          "description": "Destination profile URL."
+        }
+      },
+      "required": ["id", "platform", "url"]
+    },
+    "AdminSetting": {
+      "title": "AdminSetting",
+      "description": "Administrative credentials and settings.",
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string",
+          "description": "Admin username."
+        },
+        "password": {
+          "type": "string",
+          "description": "Admin password."
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp when credentials were last updated."
+        }
+      },
+      "required": ["username", "password"]
+    }
+  },
+  "firestore": {
+    "/posts/{postId}": {
+      "schema": { "$ref": "#/entities/Post" },
+      "description": "Public social posts, articles, and announcements published by Stylez Hub."
+    },
+    "/news/{newsId}": {
+      "schema": { "$ref": "#/entities/NewsItem" },
+      "description": "Public community bulletins and short broadcast news."
+    },
+    "/socials/{socialId}": {
+      "schema": { "$ref": "#/entities/SocialAccount" },
+      "description": "Public official social channels and media accounts."
+    },
+    "/settings/{settingId}": {
+      "schema": { "$ref": "#/entities/AdminSetting" },
+      "description": "System settings and admin control configuration."
+    }
+  }
+}
