@@ -23,7 +23,7 @@ interface AdminPanelProps {
   socials: SocialAccount[];
   onSaveBlogs: (blogs: BlogPost[]) => void;
   onSaveNews: (news: NewsItem[]) => void;
-  onSaveSocials: (socials: SocialAccount[]) => void;
+  onSaveSocials: (socials: SocialAccount[]) => Promise<void> | void;
   onUpdateCredentials: (newCreds: AdminCredentials) => void;
   onResetData: () => void;
   onExitAdmin: () => void;

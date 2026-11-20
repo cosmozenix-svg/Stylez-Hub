@@ -160,17 +160,7 @@ export const databaseService = {
       const q = collection(db, socialsCollectionPath);
       return onSnapshot(
         q,
-        async (snapshot) => {
-          if (snapshot.empty) {
-            // First time initialization in database if collection is empty
-            const initial = storageService.getSocials();
-            for (const item of initial) {
-              await setDoc(doc(db, 'socials', item.id), item, { merge: true }).catch(() => {});
-            }
-            callback(initial);
-            return;
-          }
-
+        (snapshot) => {
           const items: SocialAccount[] = [];
           snapshot.forEach((docSnap) => {
             const data = docSnap.data() as SocialAccount;
@@ -178,6 +168,16 @@ export const databaseService = {
               ...data,
               id: docSnap.id,
             });
+          });
+
+          // Deterministic sort: extract numeric timestamp/index from `social-<num>` when available
+          items.sort((a, b) => {
+            const aMatch = /^social-(\d+)/.exec(a.id);
+            const bMatch = /^social-(\d+)/.exec(b.id);
+            if (aMatch && bMatch) {
+              return Number(aMatch[1]) - Number(bMatch[1]);
+            }
+            return a.id.localeCompare(b.id);
           });
 
           storageService.saveSocials(items);
@@ -194,9 +194,18 @@ export const databaseService = {
   },
 
   async saveSocialAccount(item: SocialAccount): Promise<void> {
-    const path = `socials/${item.id}`;
+    const cleanId = (item.id || `social-${Date.now()}`).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 128);
+    const path = `socials/${cleanId}`;
     try {
-      await setDoc(doc(db, 'socials', item.id), item, { merge: true });
+      const cleanLogo = typeof item.logoUrl === 'string' && item.logoUrl.length <= 200000 ? item.logoUrl : '';
+      const payload: SocialAccount = {
+        id: cleanId,
+        platform: (item.platform || 'Social').trim().slice(0, 100) || 'Social',
+        url: (item.url || 'https://example.com').trim().slice(0, 1000) || 'https://example.com',
+        logoUrl: cleanLogo,
+        color: (item.color || '#38bdf8').trim().slice(0, 32) || '#38bdf8',
+      };
+      await setDoc(doc(db, 'socials', cleanId), payload, { merge: true });
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, path);
     }
@@ -287,6 +296,10 @@ export const databaseService = {
       const news = await getDocs(collection(db, 'news'));
       for (const n of news.docs) {
         await deleteDoc(doc(db, 'news', n.id)).catch(() => {});
+      }
+      const socials = await getDocs(collection(db, 'socials'));
+      for (const s of socials.docs) {
+        await deleteDoc(doc(db, 'socials', s.id)).catch(() => {});
       }
     } catch {
       // ignore

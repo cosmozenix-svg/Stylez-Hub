@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, ChevronRight, Layers, Star } from 'lucide-react';
+import { ArrowUpRight, Layers, Star } from 'lucide-react';
 import { BlogPost } from '../types';
 import { BRAND } from '../constants/brand';
 
@@ -38,8 +38,8 @@ export const BlogCard: React.FC<BlogCardProps> = ({ post, onClick, featured = fa
   return (
     <article
       onClick={onClick}
-      className={`glass-card rounded-2xl overflow-hidden cursor-pointer group select-none relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/60 border border-blue-500/15 ${
-        featured ? 'md:grid md:grid-cols-12 md:items-stretch' : 'flex flex-col'
+      className={`glass-card rounded-2xl overflow-hidden cursor-pointer group select-none relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/70 ${
+        featured ? 'md:grid md:grid-cols-12 md:items-stretch' : 'flex flex-col h-full'
       }`}
       tabIndex={0}
       onKeyDown={(e) => {
@@ -52,38 +52,38 @@ export const BlogCard: React.FC<BlogCardProps> = ({ post, onClick, featured = fa
       {/* 16:9 Thumbnail Container */}
       <div
         className={`relative aspect-video w-full overflow-hidden bg-[#060d1c] ${
-          featured ? 'md:col-span-7 md:aspect-auto md:min-h-[280px] lg:min-h-[320px] md:h-full' : ''
+          featured ? 'md:col-span-7 md:aspect-auto md:min-h-[300px] lg:min-h-[360px] md:h-full' : ''
         }`}
       >
         {thumbnail && !imageFailed ? (
           <img
             src={thumbnail}
-            alt={post.title || 'Post thumbnail'}
+            alt={post.title || 'Post cover'}
             referrerPolicy="no-referrer"
             loading="lazy"
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
             onError={() => setImageFailed(true)}
           />
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center bg-[#081226] p-4 text-center gap-2">
+          <div className="w-full h-full editorial-grid-bg flex flex-col items-center justify-center bg-gradient-to-br from-[#0a1428] via-[#060d1c] to-[#030712] p-6 text-center gap-2.5">
             <img
               src={BRAND.iconUrl}
               alt={BRAND.name}
               referrerPolicy="no-referrer"
-              className="w-10 h-10 rounded-lg object-cover opacity-70 border border-blue-500/20"
+              className="w-11 h-11 rounded-xl object-cover opacity-85 border border-sky-400/25 shadow-lg shadow-blue-950/60"
             />
-            <span className="font-heading font-semibold text-xs text-slate-400">
+            <span className="font-heading font-semibold text-xs text-slate-300 tracking-tight">
               {BRAND.name}
             </span>
           </div>
         )}
 
         {/* Scrim */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#040812]/80 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#030712]/80 via-transparent to-transparent" />
 
         {/* Subtle media count indicator */}
         {post.images && post.images.length > 1 && (
-          <div className="absolute bottom-3 right-3 flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-mono bg-[#040812]/80 text-slate-200 border border-blue-500/25 backdrop-blur-sm">
+          <div className="absolute bottom-3 right-3 flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-mono bg-[#030712]/85 text-slate-200 border border-slate-700/80 backdrop-blur-sm">
             <Layers className="w-3 h-3 text-sky-400" />
             <span>{post.images.length}</span>
           </div>
@@ -92,11 +92,11 @@ export const BlogCard: React.FC<BlogCardProps> = ({ post, onClick, featured = fa
 
       {/* Content Section */}
       <div
-        className={`p-4 sm:p-5 flex flex-col justify-between gap-3 flex-1 min-w-0 ${
-          featured ? 'md:col-span-5 md:p-6' : ''
+        className={`p-5 sm:p-6 flex flex-col justify-between gap-4 flex-1 min-w-0 ${
+          featured ? 'md:col-span-5 md:p-7 lg:p-8' : ''
         }`}
       >
-        <div className="space-y-2.5 min-w-0">
+        <div className="space-y-3 min-w-0">
           {/* Clean Unboxed Metadata Line (Zero-Pill Discipline) */}
           <div className="flex items-center gap-2 text-xs text-slate-400 flex-wrap">
             {post.category && (
@@ -107,8 +107,7 @@ export const BlogCard: React.FC<BlogCardProps> = ({ post, onClick, featured = fa
                 </span>
               </>
             )}
-            <span className="inline-flex items-center gap-1 font-mono text-[11px] text-slate-400">
-              <Calendar className="w-3 h-3 text-slate-500" />
+            <span className="font-mono text-[11px] text-slate-400">
               {dateFormatted}
             </span>
             {reviews.length > 0 && avgRating && (
@@ -126,8 +125,8 @@ export const BlogCard: React.FC<BlogCardProps> = ({ post, onClick, featured = fa
 
           {/* Title */}
           <h2
-            className={`font-heading font-bold text-slate-100 group-hover:text-sky-300 transition-colors leading-snug tracking-tight break-words ${
-              featured ? 'text-xl sm:text-2xl line-clamp-3' : 'text-lg line-clamp-2'
+            className={`font-heading font-bold text-slate-50 group-hover:text-sky-300 transition-colors leading-snug tracking-tight break-words ${
+              featured ? 'text-xl sm:text-2xl lg:text-[26px] line-clamp-3' : 'text-lg line-clamp-2'
             }`}
           >
             {post.title}
@@ -137,7 +136,7 @@ export const BlogCard: React.FC<BlogCardProps> = ({ post, onClick, featured = fa
           {post.description && (
             <p
               className={`text-sm text-slate-400 leading-relaxed font-normal break-words ${
-                featured ? 'line-clamp-4' : 'line-clamp-2'
+                featured ? 'line-clamp-4 sm:line-clamp-5' : 'line-clamp-2'
               }`}
             >
               {post.description}
@@ -146,16 +145,16 @@ export const BlogCard: React.FC<BlogCardProps> = ({ post, onClick, featured = fa
         </div>
 
         {/* Footer Action */}
-        <div className="pt-3 flex items-center justify-between text-xs border-t border-blue-500/15">
-          <span className="text-slate-400 font-medium">
+        <div className="pt-3.5 flex items-center justify-between text-xs border-t border-slate-800/80">
+          <span className="text-slate-400 font-medium font-mono">
             {reviews.length > 0
               ? `${reviews.length} ${reviews.length === 1 ? 'review' : 'reviews'}`
-              : 'Read full post'}
+              : 'Post'}
           </span>
 
           <div className="flex items-center gap-1 text-sky-400 font-semibold group-hover:text-sky-300">
-            <span>Open Post</span>
-            <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+            <span>Read Post</span>
+            <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
           </div>
         </div>
       </div>

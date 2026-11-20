@@ -9,6 +9,13 @@ interface HeaderProps {
   onSecretAdminTrigger?: () => void;
 }
 
+const TAB_PATHS: Record<MainNavTab, string> = {
+  home: '/',
+  search: '/search',
+  news: '/news',
+  social: '/socials',
+};
+
 export const Header: React.FC<HeaderProps> = ({
   activeTab,
   onTabChange,
@@ -19,7 +26,8 @@ export const Header: React.FC<HeaderProps> = ({
   const clickCountRef = useRef(0);
   const clickTimerRef = useRef<number | null>(null);
 
-  const handleLogoTap = () => {
+  const handleLogoTap = (e: React.MouseEvent) => {
+    e.preventDefault();
     // Hidden gateway: 5 consecutive taps within 2.5 seconds enables admin in iframe
     clickCountRef.current += 1;
     if (clickTimerRef.current) window.clearTimeout(clickTimerRef.current);
@@ -41,23 +49,30 @@ export const Header: React.FC<HeaderProps> = ({
     }
   };
 
-  const navItems: { id: MainNavTab; label: string }[] = [
-    { id: 'home', label: 'Feed' },
-    { id: 'search', label: 'Search' },
-    { id: 'news', label: 'News' },
-    { id: 'social', label: 'Socials' },
+  const navItems: { id: MainNavTab; label: string; href: string }[] = [
+    { id: 'home', label: 'Feed', href: TAB_PATHS.home },
+    { id: 'search', label: 'Search', href: TAB_PATHS.search },
+    { id: 'news', label: 'News', href: TAB_PATHS.news },
+    { id: 'social', label: 'Social', href: TAB_PATHS.social },
   ];
 
+  const handleLinkClick = (e: React.MouseEvent, tab: MainNavTab) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+    e.preventDefault();
+    onTabChange(tab);
+  };
+
   return (
-    <header className="sticky top-0 z-30 w-full border-b border-blue-500/15 bg-[#050a16]/90 backdrop-blur-md select-none">
-      <div className="max-w-6xl mx-auto px-3.5 sm:px-6 h-16 flex items-center justify-between gap-3 md:gap-8">
-        {/* Zone 1: Brand Wordmark + Icon */}
-        <button
+    <header className="sticky top-0 z-30 w-full border-b border-slate-800/80 bg-[#030712]/90 backdrop-blur-xl select-none">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4 md:gap-8">
+        {/* Zone 1: Clean Brand Lockup */}
+        <a
+          href="/"
           onClick={handleLogoTap}
-          className="flex items-center gap-2.5 sm:gap-3 text-left cursor-pointer transition-opacity hover:opacity-90 active:scale-[0.98] whitespace-nowrap shrink-0 min-w-0"
+          className="flex items-center gap-2.5 sm:gap-3 text-left cursor-pointer transition-opacity hover:opacity-90 active:scale-[0.98] whitespace-nowrap shrink-0"
           title={BRAND.name}
         >
-          <div className="relative w-9 h-9 rounded-xl overflow-hidden border border-sky-400/30 flex items-center justify-center bg-[#0b162c] shadow-sm shadow-blue-950/50 shrink-0">
+          <div className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-xl overflow-hidden border border-sky-400/30 flex items-center justify-center bg-[#091122] shrink-0">
             {!logoFailed ? (
               <img
                 src={BRAND.iconUrl}
@@ -70,42 +85,43 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="font-heading text-xs font-bold text-sky-300">SH</span>
             )}
           </div>
-          <span className="font-heading text-base sm:text-xl font-bold tracking-tight text-slate-100 whitespace-nowrap shrink-0">
+          <span className="font-heading text-base sm:text-lg font-bold tracking-tight text-slate-50 whitespace-nowrap shrink-0">
             {BRAND.name}
           </span>
-        </button>
+        </a>
 
-        {/* Zone 2: Desktop Navigation Links (Clean Typography, No Capsules) */}
-        <nav aria-label="Desktop Navigation" className="hidden md:flex items-center gap-7">
+        {/* Zone 2: Desktop Multi-Page Navigation Links */}
+        <nav aria-label="Main Navigation" className="hidden md:flex items-center gap-7">
           {navItems.map((item) => {
             const isActive = activeTab === item.id;
             return (
-              <button
+              <a
                 key={item.id}
-                onClick={() => onTabChange(item.id)}
+                href={item.href}
+                onClick={(e) => handleLinkClick(e, item.id)}
+                aria-current={isActive ? 'page' : undefined}
                 className={`relative py-2 text-sm font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                  isActive
-                    ? 'text-sky-400'
-                    : 'text-slate-400 hover:text-slate-100'
+                  isActive ? 'text-white' : 'text-slate-400 hover:text-slate-100'
                 }`}
               >
                 <span>{item.label}</span>
                 {isActive && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 rounded-full" />
+                  <span className="absolute -bottom-[1px] left-0 right-0 h-[2px] bg-sky-400 rounded-full" />
                 )}
-              </button>
+              </a>
             );
           })}
         </nav>
 
         {/* Zone 3: Single Primary Action */}
         <div className="flex items-center shrink-0">
-          <button
-            onClick={() => onTabChange(activeTab === 'social' ? 'home' : 'social')}
-            className="px-3.5 sm:px-4 py-2 min-h-[40px] rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer shadow-sm shadow-blue-950/50"
+          <a
+            href={activeTab === 'social' ? '/' : '/socials'}
+            onClick={(e) => handleLinkClick(e, activeTab === 'social' ? 'home' : 'social')}
+            className="px-4 py-2 min-h-[40px] inline-flex items-center justify-center rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer shadow-sm shadow-blue-950/60"
           >
-            {activeTab === 'social' ? 'Latest Feed' : 'Follow Stylez'}
-          </button>
+            {activeTab === 'social' ? 'View Feed' : 'Follow Stylez'}
+          </a>
         </div>
       </div>
     </header>

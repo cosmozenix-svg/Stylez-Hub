@@ -7,37 +7,7 @@ const STORAGE_KEY_CREDENTIALS = 'stylezhub_admin_credentials_v1';
 
 const INITIAL_BLOGS: BlogPost[] = [];
 const INITIAL_NEWS: NewsItem[] = [];
-
-const INITIAL_SOCIALS: SocialAccount[] = [
-  {
-    id: 'social-1',
-    platform: 'X (Twitter)',
-    logoUrl: '',
-    color: '#38bdf8',
-    url: 'https://x.com',
-  },
-  {
-    id: 'social-2',
-    platform: 'Instagram',
-    logoUrl: '',
-    color: '#3b82f6',
-    url: 'https://instagram.com',
-  },
-  {
-    id: 'social-3',
-    platform: 'Telegram',
-    logoUrl: '',
-    color: '#0ea5e9',
-    url: 'https://telegram.org',
-  },
-  {
-    id: 'social-4',
-    platform: 'GitHub',
-    logoUrl: '',
-    color: '#94a3b8',
-    url: 'https://github.com',
-  },
-];
+const INITIAL_SOCIALS: SocialAccount[] = [];
 
 const DEFAULT_CREDENTIALS: AdminCredentials = {
   username: 'admin',
@@ -130,7 +100,7 @@ export const storageService = {
       const data = safeGetItem(STORAGE_KEY_SOCIALS);
       if (data !== null) {
         const parsed = JSON.parse(data);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           return parsed.filter((s) => s && typeof s === 'object' && typeof s.id === 'string');
         }
       }

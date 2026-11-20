@@ -8,17 +8,23 @@ interface BottomNavProps {
 }
 
 export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange }) => {
-  const tabs: { id: MainNavTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-    { id: 'home', label: 'Feed', icon: Home },
-    { id: 'search', label: 'Search', icon: Search },
-    { id: 'news', label: 'News', icon: Newspaper },
-    { id: 'social', label: 'Socials', icon: Globe },
+  const tabs: { id: MainNavTab; label: string; href: string; icon: React.ComponentType<{ className?: string }> }[] = [
+    { id: 'home', label: 'Feed', href: '/', icon: Home },
+    { id: 'search', label: 'Search', href: '/search', icon: Search },
+    { id: 'news', label: 'News', href: '/news', icon: Newspaper },
+    { id: 'social', label: 'Social', href: '/socials', icon: Globe },
   ];
+
+  const handleLinkClick = (e: React.MouseEvent, tab: MainNavTab) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+    e.preventDefault();
+    onTabChange(tab);
+  };
 
   return (
     <nav
-      aria-label="Primary Mobile Navigation"
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-blue-500/15 bg-[#050a16]/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)]"
+      aria-label="Mobile Navigation"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-slate-800/90 bg-[#030712]/95 backdrop-blur-xl pb-[env(safe-area-inset-bottom)]"
     >
       <div className="max-w-md mx-auto grid grid-cols-4 h-16 px-2">
         {tabs.map((tab) => {
@@ -26,15 +32,17 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange }) 
           const isActive = activeTab === tab.id;
 
           return (
-            <button
+            <a
               key={tab.id}
-              onClick={() => onTabChange(tab.id)}
+              href={tab.href}
+              onClick={(e) => handleLinkClick(e, tab.id)}
+              aria-current={isActive ? 'page' : undefined}
               className={`relative flex flex-col items-center justify-center min-h-[48px] py-1 transition-colors select-none group cursor-pointer ${
                 isActive ? 'text-sky-400' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               {isActive && (
-                <span className="absolute top-0 left-4 right-4 h-0.5 bg-blue-500 rounded-b-full" />
+                <span className="absolute top-0 left-4 right-4 h-[2px] bg-sky-400 rounded-b-full" />
               )}
 
               <Icon
@@ -44,12 +52,12 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange }) 
               />
               <span
                 className={`text-[11px] tracking-tight mt-1 transition-colors whitespace-nowrap ${
-                  isActive ? 'text-sky-300 font-semibold' : 'text-slate-400 font-normal'
+                  isActive ? 'text-slate-100 font-semibold' : 'text-slate-400 font-normal'
                 }`}
               >
                 {tab.label}
               </span>
-            </button>
+            </a>
           );
         })}
       </div>

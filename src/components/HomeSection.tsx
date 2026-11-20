@@ -1,18 +1,31 @@
 import React, { useState, useMemo } from 'react';
-import { Filter, RotateCcw, Layers } from 'lucide-react';
-import { BlogPost, SortOption } from '../types';
+import { ArrowRight, Layers, RotateCcw } from 'lucide-react';
+import { BlogPost, MainNavTab, SortOption } from '../types';
 import { BlogCard } from './BlogCard';
 import { BRAND } from '../constants/brand';
 
 interface HomeSectionProps {
   blogs: BlogPost[];
+  newsCount: number;
+  socialsCount: number;
   onSelectBlog: (blog: BlogPost) => void;
+  onNavigateTab: (tab: MainNavTab) => void;
 }
 
-export const HomeSection: React.FC<HomeSectionProps> = ({ blogs, onSelectBlog }) => {
+export const HomeSection: React.FC<HomeSectionProps> = ({
+  blogs,
+  newsCount,
+  socialsCount,
+  onSelectBlog,
+  onNavigateTab,
+}) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [sortOption, setSortOption] = useState<SortOption>('newest');
-  const [showFilters, setShowFilters] = useState(false);
+
+  const totalReviews = useMemo(
+    () => blogs.reduce((sum, b) => sum + (Array.isArray(b.reviews) ? b.reviews.length : 0), 0),
+    [blogs]
+  );
 
   const categories = useMemo(() => {
     if (!blogs || blogs.length === 0) return ['All'];
@@ -48,65 +61,148 @@ export const HomeSection: React.FC<HomeSectionProps> = ({ blogs, onSelectBlog })
     return result;
   }, [blogs, selectedCategory, sortOption]);
 
-  const isDefaultView = selectedCategory === 'All' && sortOption === 'newest' && processedBlogs.length > 1;
+  const isDefaultView =
+    selectedCategory === 'All' && sortOption === 'newest' && processedBlogs.length > 0;
   const featuredPost = isDefaultView ? processedBlogs[0] : null;
   const gridPosts = isDefaultView ? processedBlogs.slice(1) : processedBlogs;
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto px-3.5 sm:px-6 pt-5 sm:pt-6 pb-28 md:pb-16 animate-in fade-in duration-150">
-      {/* Brand Identity Hero Banner */}
-      <section className="glass-panel rounded-2xl p-4 sm:p-7 border border-blue-500/20 bg-gradient-to-br from-[#0b162c] via-[#070f20] to-[#050a16]">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-5">
-          <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
-            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl overflow-hidden border border-sky-400/35 bg-[#060d1c] flex-shrink-0 shadow-lg shadow-blue-950/60">
-              <img
-                src={BRAND.iconUrl}
-                alt={`${BRAND.name} Icon`}
-                referrerPolicy="no-referrer"
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <div className="min-w-0">
-              <h1 className="font-heading text-xl sm:text-3xl font-extrabold tracking-tight text-slate-100 truncate">
-                {BRAND.name}
-              </h1>
-              <p className="text-xs sm:text-sm text-sky-300/90 mt-0.5 font-medium break-words">
-                {BRAND.description}
-              </p>
-              <div className="flex items-center gap-2 text-xs text-slate-400 mt-1.5 font-mono">
-                <span>{blogs.length} {blogs.length === 1 ? 'Post' : 'Posts'}</span>
-                <span aria-hidden="true" className="text-slate-600">·</span>
-                <span>Public Feed</span>
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 sm:pt-10 pb-28 md:pb-20 space-y-10 animate-in fade-in duration-150">
+      {/* Architectural Masthead Hero */}
+      <section className="pb-8 border-b border-slate-800/80">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-center">
+          <div className="lg:col-span-8 space-y-4">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl overflow-hidden border border-sky-400/30 bg-[#091122] shrink-0 shadow-lg shadow-blue-950/60">
+                <img
+                  src={BRAND.iconUrl}
+                  alt={`${BRAND.name} Icon`}
+                  referrerPolicy="no-referrer"
+                  className="w-full h-full object-cover"
+                />
               </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-sky-400 tracking-wide">
+                  Official Publication & Feed
+                </p>
+                <h1 className="font-heading text-3xl sm:text-5xl font-extrabold tracking-tight text-white leading-[1.08]">
+                  {BRAND.name}
+                </h1>
+              </div>
+            </div>
+
+            <p className="text-sm sm:text-base text-slate-300 max-w-2xl leading-relaxed">
+              {BRAND.description} Explore featured posts, community reviews, quick dispatches, and official channels from one place.
+            </p>
+
+            <div className="flex flex-wrap items-center gap-3 pt-1">
+              <button
+                type="button"
+                onClick={() => onNavigateTab('search')}
+                className="px-4 py-2.5 min-h-[42px] rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-semibold transition-colors inline-flex items-center gap-2 cursor-pointer shadow-sm shadow-blue-950/60"
+              >
+                <span>Search Archive</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => onNavigateTab('news')}
+                className="px-4 py-2.5 min-h-[42px] rounded-xl glass-button text-slate-200 hover:text-white text-xs sm:text-sm font-semibold transition-colors cursor-pointer"
+              >
+                Latest News
+              </button>
+              <button
+                type="button"
+                onClick={() => onNavigateTab('social')}
+                className="px-4 py-2.5 min-h-[42px] rounded-xl glass-button text-slate-200 hover:text-white text-xs sm:text-sm font-semibold transition-colors cursor-pointer"
+              >
+                Official Socials
+              </button>
             </div>
           </div>
 
-          {blogs && blogs.length > 0 && (
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`w-full sm:w-auto justify-center py-2.5 sm:py-2 px-4 min-h-[42px] rounded-xl transition-colors text-xs font-semibold flex items-center gap-2 cursor-pointer whitespace-nowrap shrink-0 ${
-                showFilters || selectedCategory !== 'All'
-                  ? 'bg-blue-600 text-white shadow-sm shadow-blue-950/60'
-                  : 'glass-button text-slate-200 hover:text-white'
-              }`}
-              title="Filter and sort posts"
-            >
-              <Filter className="w-3.5 h-3.5" />
-              <span>Filter & Sort</span>
-            </button>
-          )}
+          {/* Right: Clean Real-Data Metrics Ledger */}
+          <div className="lg:col-span-4 rounded-2xl bg-[#070e1d] border border-slate-800/90 p-4 sm:p-5 grid grid-cols-3 lg:grid-cols-1 gap-3 lg:gap-0 lg:divide-y lg:divide-slate-800/80">
+            <div className="lg:pb-3.5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-0.5">
+              <span className="text-[11px] sm:text-xs text-slate-400">Published Posts</span>
+              <span className="font-mono text-lg sm:text-xl font-bold text-white tabular-nums">
+                {blogs.length}
+              </span>
+            </div>
+            <div className="lg:py-3.5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-0.5 border-l border-slate-800/80 pl-3 lg:border-l-0 lg:pl-0">
+              <span className="text-[11px] sm:text-xs text-slate-400">Community Reviews</span>
+              <span className="font-mono text-lg sm:text-xl font-bold text-sky-400 tabular-nums">
+                {totalReviews}
+              </span>
+            </div>
+            <div className="lg:pt-3.5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-0.5 border-l border-slate-800/80 pl-3 lg:border-l-0 lg:pl-0">
+              <span className="text-[11px] sm:text-xs text-slate-400">
+                News & Channels
+              </span>
+              <span className="font-mono text-lg sm:text-xl font-bold text-slate-200 tabular-nums">
+                {newsCount + socialsCount}
+              </span>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Filter & Sorting Controls Sheet */}
-      {showFilters && blogs && blogs.length > 0 && (
-        <div className="glass-panel rounded-2xl p-4 sm:p-5 space-y-4 border border-blue-500/20 bg-[#081124] animate-in fade-in duration-150">
-          <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-            <div className="space-y-1.5 flex-1">
-              <span className="text-xs font-semibold text-slate-400 block">
-                Sort Posts
-              </span>
-              <div className="grid grid-cols-3 gap-2 max-w-md">
+      {/* Main Content */}
+      {!blogs || blogs.length === 0 ? (
+        <section className="rounded-2xl border border-slate-800/90 bg-[#070e1d] editorial-grid-bg p-10 sm:p-14 text-center space-y-3">
+          <div className="w-12 h-12 rounded-2xl bg-[#0b162c] border border-sky-400/25 text-sky-400 flex items-center justify-center mx-auto">
+            <Layers className="w-5 h-5" />
+          </div>
+          <h2 className="font-heading text-lg sm:text-xl font-bold text-white">
+            No posts published yet
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto leading-relaxed">
+            {BRAND.description} Featured posts, links, and community reviews will appear here as soon as they are published.
+          </p>
+        </section>
+      ) : (
+        <div className="space-y-8">
+          {/* Featured Spotlight */}
+          {featuredPost && (
+            <section className="space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <h2 className="font-heading text-base sm:text-lg font-bold text-slate-100">
+                  Featured Post
+                </h2>
+                <span className="text-xs font-mono text-slate-400">Latest release</span>
+              </div>
+              <BlogCard
+                post={featuredPost}
+                featured={true}
+                onClick={() => onSelectBlog(featuredPost)}
+              />
+            </section>
+          )}
+
+          {/* Inline Filter & Sort Toolbar */}
+          <section className="space-y-5">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3.5 pb-4 border-b border-slate-800/80">
+              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
+                {categories.map((cat) => {
+                  const active = selectedCategory === cat;
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setSelectedCategory(cat)}
+                      className={`px-3.5 py-2 min-h-[38px] rounded-lg text-xs font-semibold transition-colors shrink-0 cursor-pointer whitespace-nowrap ${
+                        active
+                          ? 'bg-blue-600 text-white shadow-sm shadow-blue-950/50'
+                          : 'glass-button text-slate-300 hover:text-white'
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center gap-1 p-1 rounded-xl bg-[#070e1d] border border-slate-800/90 self-start md:self-auto">
                 {(
                   [
                     { id: 'newest', label: 'Newest' },
@@ -116,11 +212,12 @@ export const HomeSection: React.FC<HomeSectionProps> = ({ blogs, onSelectBlog })
                 ).map((opt) => (
                   <button
                     key={opt.id}
+                    type="button"
                     onClick={() => setSortOption(opt.id)}
-                    className={`py-2.5 sm:py-2 px-2 sm:px-3 min-h-[40px] rounded-lg text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
+                    className={`px-3 py-1.5 min-h-[34px] rounded-lg text-xs font-medium transition-colors cursor-pointer whitespace-nowrap ${
                       sortOption === opt.id
                         ? 'bg-blue-600 text-white'
-                        : 'glass-button text-slate-300 hover:text-white'
+                        : 'text-slate-400 hover:text-slate-100'
                     }`}
                   >
                     {opt.label}
@@ -129,87 +226,40 @@ export const HomeSection: React.FC<HomeSectionProps> = ({ blogs, onSelectBlog })
               </div>
             </div>
 
-            {categories.length > 1 && (
-              <div className="space-y-1.5 flex-1">
-                <span className="text-xs font-semibold text-slate-400 block">
-                  Topic
-                </span>
-                <div className="flex flex-wrap gap-2">
-                  {categories.map((cat) => (
-                    <button
-                      key={cat}
-                      onClick={() => setSelectedCategory(cat)}
-                      className={`px-3 py-2 sm:py-1.5 min-h-[38px] text-xs font-semibold rounded-lg transition-colors cursor-pointer whitespace-nowrap ${
-                        selectedCategory === cat
-                          ? 'bg-blue-600 text-white'
-                          : 'glass-button text-slate-300 hover:text-white'
-                      }`}
-                    >
-                      {cat}
-                    </button>
-                  ))}
-                </div>
+            {processedBlogs.length === 0 ? (
+              <div className="rounded-2xl border border-slate-800/90 bg-[#070e1d] p-10 text-center space-y-3">
+                <p className="text-sm text-slate-100 font-semibold">No matching posts</p>
+                <p className="text-xs text-slate-400">
+                  No posts match the selected topic filter.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCategory('All');
+                    setSortOption('newest');
+                  }}
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 min-h-[42px] rounded-lg bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white cursor-pointer"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Reset Filter</span>
+                </button>
               </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Posts List or Empty State */}
-      {!blogs || blogs.length === 0 ? (
-        <div className="glass-card rounded-2xl p-8 sm:p-12 text-center space-y-3 mt-4 border border-blue-500/15">
-          <div className="w-12 h-12 rounded-2xl bg-[#0b162c] border border-blue-500/20 text-sky-400 flex items-center justify-center mx-auto">
-            <Layers className="w-5 h-5" />
-          </div>
-          <p className="font-heading text-base text-slate-100 font-bold">
-            No posts published on {BRAND.name} yet
-          </p>
-          <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
-            {BRAND.description} New posts, announcements, and links will appear here once published.
-          </p>
-        </div>
-      ) : processedBlogs.length === 0 ? (
-        <div className="glass-card rounded-2xl p-8 sm:p-10 text-center space-y-3 mt-4">
-          <p className="text-sm text-slate-100 font-semibold">No matching posts</p>
-          <p className="text-xs text-slate-400">
-            No posts match the selected topic filter.
-          </p>
-          <button
-            onClick={() => {
-              setSelectedCategory('All');
-              setSortOption('newest');
-            }}
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 min-h-[42px] rounded-lg bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white cursor-pointer mt-1"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Reset Filter</span>
-          </button>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {featuredPost && (
-            <BlogCard
-              post={featuredPost}
-              featured={true}
-              onClick={() => onSelectBlog(featuredPost)}
-            />
-          )}
-
-          {gridPosts.length > 0 && (
-            <div
-              className={`grid grid-cols-1 md:grid-cols-2 gap-5 ${
-                gridPosts.length >= 3 ? 'lg:grid-cols-3' : ''
-              }`}
-            >
-              {gridPosts.map((blog) => (
-                <BlogCard
-                  key={blog.id}
-                  post={blog}
-                  onClick={() => onSelectBlog(blog)}
-                />
-              ))}
-            </div>
-          )}
+            ) : gridPosts.length > 0 ? (
+              <div
+                className={`grid grid-cols-1 md:grid-cols-2 gap-5 ${
+                  gridPosts.length >= 3 ? 'lg:grid-cols-3' : ''
+                }`}
+              >
+                {gridPosts.map((blog) => (
+                  <BlogCard
+                    key={blog.id}
+                    post={blog}
+                    onClick={() => onSelectBlog(blog)}
+                  />
+                ))}
+              </div>
+            ) : null}
+          </section>
         </div>
       )}
     </div>

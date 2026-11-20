@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { BlogPost, NewsItem, SocialAccount, AdminCredentials, MainNavTab, PostReview } from './types';
 import { storageService } from './services/storage';
 import { databaseService } from './services/databaseService';
@@ -17,24 +17,84 @@ import { SocialSection } from './components/SocialSection';
 import { BlogDetail } from './components/BlogDetail';
 import { AdminPanel } from './components/admin/AdminPanel';
 
+const TAB_TO_PATH: Record<MainNavTab, string> = {
+  home: '/',
+  search: '/search',
+  news: '/news',
+  social: '/socials',
+};
+
+interface ParsedRoute {
+  isAdmin: boolean;
+  tab: MainNavTab;
+  postId: string | null;
+}
+
+function parseLocationRoute(): ParsedRoute {
+  try {
+    const rawPath = window.location.pathname || '/';
+    const path = rawPath.toLowerCase().replace(/\/+$/, '') || '/';
+    const hash = (window.location.hash || '').toLowerCase();
+    const search = (window.location.search || '').toLowerCase();
+
+    const isAdmin =
+      path === '/admin' ||
+      path.endsWith('/admin') ||
+      path.includes('/admin/') ||
+      hash === '#/admin' ||
+      hash === '#admin' ||
+      search.includes('admin');
+
+    if (isAdmin) {
+      return { isAdmin: true, tab: 'home', postId: null };
+    }
+
+    if (rawPath.toLowerCase().startsWith('/post/')) {
+      const slug = rawPath.slice(6).split('/')[0];
+      if (slug) {
+        return { isAdmin: false, tab: 'home', postId: decodeURIComponent(slug) };
+      }
+    }
+
+    if (path === '/search') {
+      return { isAdmin: false, tab: 'search', postId: null };
+    }
+    if (path === '/news') {
+      return { isAdmin: false, tab: 'news', postId: null };
+    }
+    if (path === '/social' || path === '/socials') {
+      return { isAdmin: false, tab: 'social', postId: null };
+    }
+
+    return { isAdmin: false, tab: 'home', postId: null };
+  } catch {
+    return { isAdmin: false, tab: 'home', postId: null };
+  }
+}
+
 export default function App() {
   const [blogs, setBlogs] = useState<BlogPost[]>(() => storageService.getBlogs());
+  const [postsSynced, setPostsSynced] = useState(false);
   const [news, setNews] = useState<NewsItem[]>(() => storageService.getNews());
   const [socials, setSocials] = useState<SocialAccount[]>(() => storageService.getSocials());
   const [credentials, setCredentials] = useState<AdminCredentials>(() => storageService.getCredentials());
 
-  const [isAdminRoute, setIsAdminRoute] = useState(false);
-  const [activeTab, setActiveTab] = useState<MainNavTab>('home');
-  const [selectedBlog, setSelectedBlog] = useState<BlogPost | null>(null);
+  const initialRoute = useMemo(() => parseLocationRoute(), []);
+  const [isAdminRoute, setIsAdminRoute] = useState(initialRoute.isAdmin);
+  const [activeTab, setActiveTab] = useState<MainNavTab>(initialRoute.tab);
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(initialRoute.postId);
+  const [lastListTab, setLastListTab] = useState<MainNavTab>(initialRoute.tab);
+
+  const selectedBlog = useMemo(() => {
+    if (!selectedPostId) return null;
+    return blogs.find((p) => p.id === selectedPostId) || null;
+  }, [blogs, selectedPostId]);
 
   // Real-time Firestore Cloud Database Synchronization
   useEffect(() => {
     const unsubPosts = databaseService.subscribePosts((cloudPosts) => {
       setBlogs(cloudPosts);
-      setSelectedBlog((prev) => {
-        if (!prev) return null;
-        return cloudPosts.find((p) => p.id === prev.id) || null;
-      });
+      setPostsSynced(true);
     });
 
     const unsubNews = databaseService.subscribeNews((cloudNews) => {
@@ -57,45 +117,33 @@ export default function App() {
     };
   }, []);
 
-  const checkAdminRoute = useCallback(() => {
-    try {
-      const path = window.location.pathname.toLowerCase();
-      const hash = window.location.hash.toLowerCase();
-      const search = window.location.search.toLowerCase();
-
-      return (
-        path.endsWith('/admin') ||
-        path === '/admin/' ||
-        path.includes('/admin') ||
-        hash === '#/admin' ||
-        hash === '#admin' ||
-        search.includes('admin')
-      );
-    } catch {
-      return false;
+  const syncFromLocation = useCallback(() => {
+    const parsed = parseLocationRoute();
+    setIsAdminRoute(parsed.isAdmin);
+    setSelectedPostId(parsed.postId);
+    if (!parsed.postId && !parsed.isAdmin) {
+      setActiveTab(parsed.tab);
+      setLastListTab(parsed.tab);
     }
   }, []);
 
-  const openAdminPanel = () => {
+  const openAdminPanel = useCallback(() => {
     try {
-      if (!window.location.pathname.includes('/admin')) {
+      if (!window.location.pathname.toLowerCase().includes('/admin')) {
         window.history.pushState({}, '', '/admin');
       }
     } catch {
       // ignore
     }
     setIsAdminRoute(true);
-  };
+    setSelectedPostId(null);
+  }, []);
 
   useEffect(() => {
-    setIsAdminRoute(checkAdminRoute());
+    syncFromLocation();
 
-    const handleLocationChange = () => {
-      setIsAdminRoute(checkAdminRoute());
-    };
-
-    window.addEventListener('popstate', handleLocationChange);
-    window.addEventListener('hashchange', handleLocationChange);
+    window.addEventListener('popstate', syncFromLocation);
+    window.addEventListener('hashchange', syncFromLocation);
 
     let typedBuffer = '';
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -105,7 +153,15 @@ export default function App() {
         return;
       }
 
-      if (/^[a-zA-Z]$/.test(e.key)) {
+      const target = e.target as HTMLElement | null;
+      const isTypingInField =
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable);
+
+      if (!isTypingInField && /^[a-zA-Z]$/.test(e.key)) {
         typedBuffer = (typedBuffer + e.key.toLowerCase()).slice(-5);
         if (typedBuffer === 'admin') {
           openAdminPanel();
@@ -116,22 +172,28 @@ export default function App() {
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      window.removeEventListener('popstate', handleLocationChange);
-      window.removeEventListener('hashchange', handleLocationChange);
+      window.removeEventListener('popstate', syncFromLocation);
+      window.removeEventListener('hashchange', syncFromLocation);
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [checkAdminRoute]);
+  }, [syncFromLocation, openAdminPanel]);
 
-  // Update dynamic page title for Stylez Hub
+  // Update dynamic page title per page route
   useEffect(() => {
-    if (selectedBlog) {
-      document.title = `${selectedBlog.title} | ${BRAND.name}`;
-    } else if (isAdminRoute) {
+    if (isAdminRoute) {
       document.title = `${BRAND.adminTitle} | ${BRAND.name}`;
+    } else if (selectedBlog) {
+      document.title = `${selectedBlog.title} | ${BRAND.name}`;
+    } else if (activeTab === 'search') {
+      document.title = `Search | ${BRAND.name}`;
+    } else if (activeTab === 'news') {
+      document.title = `News & Dispatches | ${BRAND.name}`;
+    } else if (activeTab === 'social') {
+      document.title = `Official Socials | ${BRAND.name}`;
     } else {
       document.title = `${BRAND.name} — ${BRAND.description}`;
     }
-  }, [selectedBlog, isAdminRoute]);
+  }, [selectedBlog, isAdminRoute, activeTab]);
 
   const handleSaveBlogs = async (updated: BlogPost[]) => {
     const prevById = new Map<string, BlogPost>(blogs.map((b) => [b.id, b]));
@@ -141,9 +203,13 @@ export default function App() {
     setBlogs(updated);
     storageService.saveBlogs(updated);
 
-    if (selectedBlog) {
-      const refreshed = updated.find((b) => b.id === selectedBlog.id);
-      setSelectedBlog(refreshed || null);
+    if (selectedPostId && !updatedIds.has(selectedPostId)) {
+      setSelectedPostId(null);
+      try {
+        window.history.replaceState({}, '', TAB_TO_PATH[lastListTab]);
+      } catch {
+        // ignore
+      }
     }
 
     for (const d of deleted) {
@@ -176,17 +242,6 @@ export default function App() {
     setBlogs(updated);
     storageService.saveBlogs(updated);
 
-    if (selectedBlog && selectedBlog.id === postId) {
-      setSelectedBlog((prev) =>
-        prev
-          ? {
-              ...prev,
-              reviews: updatedReviews,
-            }
-          : null
-      );
-    }
-
     await databaseService.addReviewToPost(postId, review, existingReviews);
   };
 
@@ -211,22 +266,26 @@ export default function App() {
   };
 
   const handleSaveSocials = async (updated: SocialAccount[]) => {
-    const prevById = new Map<string, SocialAccount>(socials.map((s) => [s.id, s]));
+    const prevSocials = socials;
+    const prevById = new Map<string, SocialAccount>(prevSocials.map((s) => [s.id, s]));
     const updatedIds = new Set(updated.map((s) => s.id));
-    const deleted = socials.filter((s) => !updatedIds.has(s.id));
+    const deleted = prevSocials.filter((s) => !updatedIds.has(s.id));
+    const changedOrAdded = updated.filter((item) => {
+      const existing = prevById.get(item.id);
+      return !existing || JSON.stringify(existing) !== JSON.stringify(item);
+    });
 
     setSocials(updated);
     storageService.saveSocials(updated);
 
-    for (const d of deleted) {
-      await databaseService.deleteSocialAccount(d.id).catch((err) => console.error(err));
-    }
-
-    for (const item of updated) {
-      const existing = prevById.get(item.id);
-      if (!existing || JSON.stringify(existing) !== JSON.stringify(item)) {
-        await databaseService.saveSocialAccount(item).catch((err) => console.error(err));
-      }
+    try {
+      await Promise.all([
+        ...deleted.map((d) => databaseService.deleteSocialAccount(d.id)),
+        ...changedOrAdded.map((item) => databaseService.saveSocialAccount(item)),
+      ]);
+    } catch (err) {
+      console.error('Failed to sync social links with database:', err);
+      throw err;
     }
   };
 
@@ -246,9 +305,7 @@ export default function App() {
 
   const handleExitAdmin = () => {
     try {
-      if (window.location.pathname.includes('/admin')) {
-        window.history.pushState({}, '', '/');
-      }
+      window.history.pushState({}, '', TAB_TO_PATH[activeTab]);
       if (window.location.hash.includes('admin')) {
         window.location.hash = '';
       }
@@ -260,19 +317,53 @@ export default function App() {
 
   const handleTabChange = (tab: MainNavTab) => {
     setActiveTab(tab);
-    setSelectedBlog(null);
+    setLastListTab(tab);
+    setSelectedPostId(null);
+    try {
+      const nextPath = TAB_TO_PATH[tab];
+      if (window.location.pathname !== nextPath) {
+        window.history.pushState({}, '', nextPath);
+      }
+    } catch {
+      // ignore
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSelectBlog = (blog: BlogPost) => {
-    setSelectedBlog(blog);
+    setLastListTab(activeTab);
+    setSelectedPostId(blog.id);
+    try {
+      const nextPath = `/post/${encodeURIComponent(blog.id)}`;
+      if (window.location.pathname !== nextPath) {
+        window.history.pushState({}, '', nextPath);
+      }
+    } catch {
+      // ignore
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleBackFromPost = () => {
+    const returnTab = lastListTab || 'home';
+    setSelectedPostId(null);
+    setActiveTab(returnTab);
+    try {
+      window.history.pushState({}, '', TAB_TO_PATH[returnTab]);
+    } catch {
+      // ignore
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleHeaderClick = () => {
-    setSelectedBlog(null);
-    setActiveTab('home');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    handleTabChange('home');
+  };
+
+  const handleFooterLinkClick = (e: React.MouseEvent, tab: MainNavTab) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+    e.preventDefault();
+    handleTabChange(tab);
   };
 
   if (isAdminRoute) {
@@ -302,18 +393,42 @@ export default function App() {
       />
 
       <main className="flex-1 w-full relative z-10">
-        {selectedBlog ? (
-          <BlogDetail
-            post={selectedBlog}
-            onBack={() => setSelectedBlog(null)}
-            onAddReview={handleAddReview}
-          />
+        {selectedPostId ? (
+          selectedBlog ? (
+            <BlogDetail
+              post={selectedBlog}
+              onBack={handleBackFromPost}
+              onAddReview={handleAddReview}
+            />
+          ) : !postsSynced ? (
+            <div className="max-w-3xl mx-auto px-4 sm:px-6 py-24 text-center space-y-3">
+              <div className="w-8 h-8 rounded-full border-2 border-sky-400 border-t-transparent animate-spin mx-auto" />
+              <p className="text-xs text-slate-400">Loading post...</p>
+            </div>
+          ) : (
+            <div className="max-w-xl mx-auto px-4 sm:px-6 py-20 text-center space-y-4">
+              <h1 className="font-heading text-2xl font-bold text-white">Post not found</h1>
+              <p className="text-sm text-slate-400">
+                This post may have been removed or the link is no longer active.
+              </p>
+              <button
+                type="button"
+                onClick={() => handleTabChange('home')}
+                className="px-5 py-2.5 min-h-[42px] rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-colors cursor-pointer"
+              >
+                Return to Feed
+              </button>
+            </div>
+          )
         ) : (
           <>
             {activeTab === 'home' && (
               <HomeSection
                 blogs={blogs}
+                newsCount={news.length}
+                socialsCount={socials.length}
                 onSelectBlog={handleSelectBlog}
+                onNavigateTab={handleTabChange}
               />
             )}
             {activeTab === 'search' && (
@@ -336,31 +451,50 @@ export default function App() {
         )}
       </main>
 
-      {/* Quiet Footer */}
-      <footer className="hidden md:block border-t border-blue-500/15 bg-[#040812]/80">
-        <div className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between text-xs text-slate-400">
+      {/* Quiet Editorial Footer */}
+      <footer className="hidden md:block border-t border-slate-800/80 bg-[#030712]/90">
+        <div className="max-w-6xl mx-auto px-6 py-6 flex items-center justify-between text-xs text-slate-400">
           <div className="flex items-center gap-2.5">
             <img
               src={BRAND.iconUrl}
               alt={BRAND.name}
               referrerPolicy="no-referrer"
-              className="w-5 h-5 rounded-md object-cover border border-blue-500/25"
+              className="w-5 h-5 rounded-md object-cover border border-slate-700"
             />
             <span className="font-heading font-semibold text-slate-200">{BRAND.name}</span>
             <span aria-hidden="true" className="text-slate-600">·</span>
             <span>{BRAND.description}</span>
           </div>
-          <div className="flex items-center gap-5">
-            <button onClick={() => handleTabChange('home')} className="hover:text-sky-400 transition-colors cursor-pointer">
+          <nav aria-label="Footer Navigation" className="flex items-center gap-6">
+            <a
+              href="/"
+              onClick={(e) => handleFooterLinkClick(e, 'home')}
+              className={`hover:text-sky-400 transition-colors ${activeTab === 'home' && !selectedPostId ? 'text-slate-100 font-medium' : ''}`}
+            >
               Feed
-            </button>
-            <button onClick={() => handleTabChange('news')} className="hover:text-sky-400 transition-colors cursor-pointer">
+            </a>
+            <a
+              href="/search"
+              onClick={(e) => handleFooterLinkClick(e, 'search')}
+              className={`hover:text-sky-400 transition-colors ${activeTab === 'search' && !selectedPostId ? 'text-slate-100 font-medium' : ''}`}
+            >
+              Search
+            </a>
+            <a
+              href="/news"
+              onClick={(e) => handleFooterLinkClick(e, 'news')}
+              className={`hover:text-sky-400 transition-colors ${activeTab === 'news' && !selectedPostId ? 'text-slate-100 font-medium' : ''}`}
+            >
               News
-            </button>
-            <button onClick={() => handleTabChange('social')} className="hover:text-sky-400 transition-colors cursor-pointer">
-              Socials
-            </button>
-          </div>
+            </a>
+            <a
+              href="/socials"
+              onClick={(e) => handleFooterLinkClick(e, 'social')}
+              className={`hover:text-sky-400 transition-colors ${activeTab === 'social' && !selectedPostId ? 'text-slate-100 font-medium' : ''}`}
+            >
+              Social
+            </a>
+          </nav>
         </div>
       </footer>
 

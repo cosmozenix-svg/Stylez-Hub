@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   ArrowLeft,
   Calendar,
@@ -41,6 +41,21 @@ export const BlogDetail: React.FC<BlogDetailProps> = ({ post, onBack, onAddRevie
   const [reviewSuccess, setReviewSuccess] = useState(false);
 
   const images = post.images && Array.isArray(post.images) ? post.images : [];
+
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setLightboxOpen(false);
+      } else if (e.key === 'ArrowLeft') {
+        setActiveImageIndex((idx) => Math.max(0, idx - 1));
+      } else if (e.key === 'ArrowRight') {
+        setActiveImageIndex((idx) => Math.min(images.length - 1, idx + 1));
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [lightboxOpen, images.length]);
 
   const links: BlogLink[] =
     Array.isArray(post.links) && post.links.length > 0
